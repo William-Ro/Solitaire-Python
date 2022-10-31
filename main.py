@@ -35,22 +35,32 @@ class card(arcade.Sprite):
 
         # Aca se utiliza un png de carta para cuando está volteada
         self.image_file_name = f":resources:images/cards/card{self.sign}{self.value}.png"
-        super().__init__(self.image_file_name, scale, hit_box_algorithm="None")
+        super().__init__(self.image_file_name, scale, hit_box_algorithm="None")  # Esto inicializa el tamaño de la carta
 
 
-class solitaire(arcade.Window):  # Aca declaramos nuestra clase juego
+class solitaire(arcade.Window):
 
-    def __init__(self):  # Constructor donde declaramos el tamanno de la ventana
+    def __init__(self):
 
-        super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+        super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)  # Declaramos el tamanno de la ventana
 
         self.card_list = None  # Creamos una lista donde van a ir metidas todas las cartas, el llamado "mazo"
 
         arcade.set_background_color(arcade.color.AMAZON)  # Hacemos la ventana de color verde
 
+        # Declaramos las cartas que tomamos con el mouse
+        self.held_cards = None
+
+        self.held_cards_original_position = None  # Posicion original de las cartas cuando las movemos
+
     def setup(self):  # Esta funcion nos sirve para reiniciar el juego
 
+        self.held_cards = []
+        # Aca ya inicializamos la posicion original de las cartas
+        self.held_cards_original_position = []
+
         self.card_list = arcade.SpriteList()
+
         for card_sign in CARD_SUITS:
             for card_value in CARD_VALUES:
                 card_aux = card(card_sign, card_value, CARD_SCALE)
@@ -58,22 +68,45 @@ class solitaire(arcade.Window):  # Aca declaramos nuestra clase juego
                 self.card_list.append(card_aux)  # nuestras cartas son los "sprite"
 
     def on_draw(self):
-        # Draw the cards
+        # Renderiza las cartas
         self.clear()
 
         self.card_list.draw()
 
     def on_mouse_press(self, x, y, button, key_modifiers):
-        # Esto es para cada vez que un usuario da click nos devuelve la posicion
-        pass
+        # Nos devuelve la lista de cartas en la que dimos click
+        cards = arcade.get_sprites_at_point((x, y), self.card_list)
+
+        # Si dimos click el comprueba lo siguiente:
+        if len(cards) > 0:
+            primary_card = cards[-1]
+            # Los demás casos solo toma la que está para arriba
+            self.held_cards = [primary_card]
+            # Guarda la posicion
+            self.held_cards_original_position = [self.held_cards[0].position]
+            # La pone encima
+            self.pull_to_top(self.held_cards[0])
 
     def on_mouse_release(self, x: float, y: float, button: int, modifiers: int):
-        # Esto es para cada vez que un usuario da click nos devuelve la posicion
-        pass
+
+        if len(self.held_cards) == 0:
+            return
+
+        # Si ya no estamos tomando ninguna carta
+        self.held_cards = []
 
     def on_mouse_motion(self, x: float, y: float, dx: float, dy: float):
-        # Esto nos dice cuando el usuario mueve el mouse
-        pass
+
+        # Si estamos tomando una carta la podemos mover de un lado a otro
+        for card in self.held_cards:
+            card.center_x += dx
+            card.center_y += dy
+
+    def pull_to_top(self, card: arcade.Sprite):
+
+        # Quita la carta de un lado y la borra
+        self.card_list.remove(card)
+        self.card_list.append(card)
 
 
 def main():
