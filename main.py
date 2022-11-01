@@ -82,7 +82,7 @@ class solitaire(arcade.Window):
 
         self.pile_mat_list = None  # Esta pila la vamos a duplicar para crear las 8 pilas del juego
 
-        self.piles = None  # Esto es una lista que tiene listas de cartas dentro
+        self.piles = None  # Esto es una lista que tiene listas de cartas dentro, podemos verla como la "mesa"
 
     def setup(self):  # Esta funcion nos sirve para reiniciar el juego
 
@@ -90,7 +90,7 @@ class solitaire(arcade.Window):
         # Aca ya inicializamos la posicion original de las cartas
         self.held_cards_original_position = []
 
-        self.setup_piles()  # Hacemos el llamado a la funcion de crear las pilas
+        self.setup_piles()  # Hacemos el llamado a la funcion de crear las pilase sto son los sprite donde van metidas
 
         self.card_list = arcade.SpriteList()
 
@@ -102,6 +102,13 @@ class solitaire(arcade.Window):
 
         self.shuffle_cards()
 
+        # Inicializamos la lista de listas que va a tener 13 espacios, nuestra "mesa"
+        self.piles = [[] for _ in range(PILE_COUNT)]
+
+        # Metemos nuestro mazo a esta nueva lista de listas
+        for card_aux in self.card_list:
+            self.piles[BOTTOM_FACE_DOWN_PILE].append(card_aux)
+
     def setup_piles(self):
 
         self.pile_mat_list: arcade.SpriteList = arcade.SpriteList()  # Creamos la lista de sprites o "pilas"
@@ -111,9 +118,9 @@ class solitaire(arcade.Window):
         self.pile_mat_list.append(pile)
 
         # Aca estamos creando un sprite a la par del mazo para cuando damos vuelta a una carta
-        # pile = arcade.SpriteSolidColor(MAT_WIDTH, MAT_HEIGHT, arcade.csscolor.DARK_OLIVE_GREEN)
-        # pile.position = START_X + X_SPACING, BOTTOM_Y
-        # self.pile_mat_list.append(pile)
+        pile = arcade.SpriteSolidColor(MAT_WIDTH, MAT_HEIGHT, arcade.csscolor.DARK_OLIVE_GREEN)
+        pile.position = START_X + X_SPACING, BOTTOM_Y
+        self.pile_mat_list.append(pile)
 
         # Creamos las 7 pilas de juego
         for i in range(7):
@@ -158,19 +165,54 @@ class solitaire(arcade.Window):
         # Comprueba si tocamos alguna pila
         if arcade.check_for_collision(self.held_cards[0], pile):
 
-            # Cada carta que tomamos la mueve a la pila
-            for i, dropped_card in enumerate(self.held_cards):
-                dropped_card.position = pile.center_x, pile.center_y
+            # Que pila es?
+            pile_index = self.pile_mat_list.index(pile)
 
-            # Si encuentra la pila no devuelve la carta a su posicion original
-            reset_position = False
+            #  Si estamos en la misma pila simplemente la devuelve a su posicion original
+            if pile_index == self.get_pile_for_card(self.held_cards[0]):
+                pass
 
-            # Release on top play pile? And only one card held?
+            # Si estamos en las 7 pilas de juego podemos hacer lo siguiente:
+            elif PLAY_PILE_1 <= pile_index <= PLAY_PILE_7:
+
+                # Comprueba si hay cartas en esa pila
+                if len(self.piles[pile_index]) > 0:
+                    # Mueve las cartas
+                    top_card = self.piles[pile_index][-1]
+                    for i, dropped_card in enumerate(self.held_cards):
+                        dropped_card.position = top_card.center_x, \
+                                                top_card.center_y - CARD_VERTICAL_OFFSET * (i + 1)
+                else:
+
+                    # Si no hay cartas en esa posicion
+                    for i, dropped_card in enumerate(self.held_cards):
+                        # Mueve las cartas
+                        dropped_card.position = pile.center_x, \
+                                                pile.center_y - CARD_VERTICAL_OFFSET * i
+
+                for card_aux in self.held_cards:
+                    # Movemos la carta a la pila correcta
+                    self.move_card_to_new_pile(card_aux, pile_index)
+
+                # No resetee su posicion
+                reset_position = False
+
+            # En caso de que queramos mover cartas a las pilas de arriba
+            elif TOP_PILE_1 <= pile_index <= TOP_PILE_4 and len(self.held_cards) == 1:
+
+                self.held_cards[0].position = pile.position
+                # Mueve la carta a la lista
+                for card_aux in self.held_cards:
+                    self.move_card_to_new_pile(card_aux, pile_index)
+
+                reset_position = False
+
         if reset_position:
-            # Si no encuentra ninguna pila cerca devuelve la carta a la posicion original
-            for pile_index, card in enumerate(self.held_cards):
-                card.position = self.held_cards_original_position[pile_index]
-        # Si ya no estamos tomando ninguna carta
+
+            for pile_index, card_aux in enumerate(self.held_cards):
+                card_aux.position = self.held_cards_original_position[pile_index]
+
+        # No estamos tomando ninguna carta
         self.held_cards = []
 
     def on_mouse_motion(self, x: float, y: float, dx: float, dy: float):
@@ -191,6 +233,24 @@ class solitaire(arcade.Window):
         for pos1 in range(len(self.card_list)):
             pos2 = random.randrange(len(self.card_list))
             self.card_list.swap(pos1, pos2)
+
+    def get_pile_for_card(self, card_aux):
+        # Le mandamos una carta y nos devuelve en la pila que se encuentra
+        for index, pile in enumerate(self.piles):
+            if card_aux in pile:
+                return index
+
+    def remove_card_from_pile(self, card_aux):
+        # Le damos una carta y la quita de la pila en que se encuentra
+        for pile in self.piles:
+            if card_aux in pile:
+                pile.remove(card_aux)
+                break
+
+    def move_card_to_new_pile(self, card_aux, pile_index):
+        # Le damos una carta, una pila y la mueve a esa pila específicamente
+        self.remove_card_from_pile(card_aux)
+        self.piles[pile_index].append(card_aux)
 
 
 def main():
