@@ -147,12 +147,24 @@ class solitaire(arcade.Window):
         # Si dimos click el comprueba lo siguiente:
         if len(cards) > 0:
             primary_card = cards[-1]
+
+            # Comprueba en que pila está la carta
+            pile_index = self.get_pile_for_card(primary_card)
+
             # Los demás casos solo toma la que está para arriba
             self.held_cards = [primary_card]
             # Guarda la posicion
             self.held_cards_original_position = [self.held_cards[0].position]
             # La pone encima
             self.pull_to_top(self.held_cards[0])
+
+            # Toma todas las demás cartas que estamos agarrando
+            card_index = self.piles[pile_index].index(primary_card)
+            for i in range(card_index + 1, len(self.piles[pile_index])):
+                card_aux = self.piles[pile_index][i]
+                self.held_cards.append(card_aux)
+                self.held_cards_original_position.append(card_aux.position)
+                self.pull_to_top(card_aux)
 
     def on_mouse_release(self, x: float, y: float, button: int, modifiers: int):
 
@@ -179,6 +191,7 @@ class solitaire(arcade.Window):
                 if len(self.piles[pile_index]) > 0:
                     # Mueve las cartas
                     top_card = self.piles[pile_index][-1]
+
                     for i, dropped_card in enumerate(self.held_cards):
                         dropped_card.position = top_card.center_x, \
                                                 top_card.center_y - CARD_VERTICAL_OFFSET * (i + 1)
