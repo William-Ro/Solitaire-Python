@@ -1,6 +1,7 @@
 # Solitaire game, based on https://api.arcade.academy/en/latest/tutorials/card_game/index.html
 
 import arcade
+import random
 
 # Aca declaramos todas las constantes
 
@@ -128,7 +129,25 @@ class solitaire(arcade.Window):
 
         if len(self.held_cards) == 0:
             return
+        # Busca la pila más cercana
+        pile, distance = arcade.get_closest_sprite(self.held_cards[0], self.pile_mat_list)
+        reset_position = True
 
+        # Comprueba si tocamos alguna pila
+        if arcade.check_for_collision(self.held_cards[0], pile):
+
+            # Cada carta que tomamos la mueve a la pila
+            for i, dropped_card in enumerate(self.held_cards):
+                dropped_card.position = pile.center_x, pile.center_y
+
+            # Si encuentra la pila no devuelve la carta a su posicion original
+            reset_position = False
+
+            # Release on top play pile? And only one card held?
+        if reset_position:
+            # Si no encuentra ninguna pila cerca devuelve la carta a la posicion original
+            for pile_index, card in enumerate(self.held_cards):
+                card.position = self.held_cards_original_position[pile_index]
         # Si ya no estamos tomando ninguna carta
         self.held_cards = []
 
@@ -144,6 +163,11 @@ class solitaire(arcade.Window):
         # Quita la carta de un lado y la borra
         self.card_list.remove(card_aux)
         self.card_list.append(card_aux)
+    def shuffle_cards(self):
+        # Metodo general para revolver las cartas
+        for pos1 in range(len(self.card_list)):
+            pos2 = random.randrange(len(self.card_list))
+            self.card_list.swap(pos1, pos2)
 
 
 def main():
