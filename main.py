@@ -31,9 +31,27 @@ MIDDLE_Y = TOP_Y - MAT_HEIGHT - MAT_HEIGHT * VERTICAL_MARGIN_PERCENT
 
 # Espaciado al que están las pilas
 X_SPACING = MAT_WIDTH + MAT_WIDTH * HORIZONTAL_MARGIN_PERCENT
+# Espaciado que tiene cada carta cuando está una encima de otra
+CARD_VERTICAL_OFFSET = CARD_HEIGHT * CARD_SCALE * 0.3
 
 CARD_VALUES = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]  # Declaramos las cartas
 CARD_SUITS = ["Clubs", "Hearts", "Spades", "Diamonds"]
+
+# Constantes para representar cada pila individualmente
+PILE_COUNT = 13
+BOTTOM_FACE_DOWN_PILE = 0
+BOTTOM_FACE_UP_PILE = 1
+PLAY_PILE_1 = 2
+PLAY_PILE_2 = 3
+PLAY_PILE_3 = 4
+PLAY_PILE_4 = 5
+PLAY_PILE_5 = 6
+PLAY_PILE_6 = 7
+PLAY_PILE_7 = 8
+TOP_PILE_1 = 9
+TOP_PILE_2 = 10
+TOP_PILE_3 = 11
+TOP_PILE_4 = 12
 
 
 class card(arcade.Sprite):
@@ -64,6 +82,8 @@ class solitaire(arcade.Window):
 
         self.pile_mat_list = None  # Esta pila la vamos a duplicar para crear las 8 pilas del juego
 
+        self.piles = None  # Esto es una lista que tiene listas de cartas dentro
+
     def setup(self):  # Esta funcion nos sirve para reiniciar el juego
 
         self.held_cards = []
@@ -79,6 +99,8 @@ class solitaire(arcade.Window):
                 card_aux = card(card_sign, card_value, CARD_SCALE)
                 card_aux.position = START_X, BOTTOM_Y  # Esto es para llenar nuestra lista con cada una de las cartas
                 self.card_list.append(card_aux)  # nuestras cartas son los "sprite"
+
+        self.shuffle_cards()
 
     def setup_piles(self):
 
@@ -163,6 +185,7 @@ class solitaire(arcade.Window):
         # Quita la carta de un lado y la borra
         self.card_list.remove(card_aux)
         self.card_list.append(card_aux)
+
     def shuffle_cards(self):
         # Metodo general para revolver las cartas
         for pos1 in range(len(self.card_list)):
