@@ -1,5 +1,6 @@
 # Solitaire game, based on https://api.arcade.academy/en/latest/tutorials/card_game/index.html
 
+
 import arcade
 import random
 
@@ -163,35 +164,76 @@ class solitaire(arcade.Window):
         self.card_list.draw()
 
     def on_mouse_press(self, x, y, button, key_modifiers):
+
         # Nos devuelve la lista de cartas en la que dimos click
         cards = arcade.get_sprites_at_point((x, y), self.card_list)
 
-        # Si dimos click el comprueba lo siguiente:
+        # Si la pila que tocamos tiene algo
         if len(cards) > 0:
+
             primary_card = cards[-1]
             assert isinstance(primary_card, card)
 
             # Comprueba en que pila está la carta
             pile_index = self.get_pile_for_card(primary_card)
 
-            # Aca comprobamos que si movemos la ultima carta de una pila esta se va a dar vuelta automáticamente
-            if primary_card.is_face_down:
+            # Si le damos click al mazo
+            if pile_index == BOTTOM_FACE_DOWN_PILE:
+                # Nos devuelve tres cartas
+                for i in range(3):
+                    # Si nos quedamos sin cartas se detiene
+                    if len(self.piles[BOTTOM_FACE_DOWN_PILE]) == 0:
+                        break
+                    # Toma la carta de arriba
+                    card_aux = self.piles[BOTTOM_FACE_DOWN_PILE][-1]
+                    # Le da vuelta
+                    card_aux.face_up()
+
+                    card_aux.position = self.pile_mat_list[BOTTOM_FACE_UP_PILE].position
+                    # Quita la carta de la pila
+                    self.piles[BOTTOM_FACE_DOWN_PILE].remove(card_aux)
+                    # Mueve la carta a la pila face up
+                    self.piles[BOTTOM_FACE_UP_PILE].append(card_aux)
+                    # La pone arriba
+                    self.pull_to_top(card_aux)
+
+            elif primary_card.is_face_down:
+                # Aca comprobamos que si movemos la ultima carta de una pila esta se va a dar vuelta automáticamente
                 primary_card.face_up()
+            else:
+                # Los demás casos solo toma la que está para arriba
+                self.held_cards = [primary_card]
+                # Guarda la posicion
+                self.held_cards_original_position = [self.held_cards[0].position]
+                # La pone encima
+                self.pull_to_top(self.held_cards[0])
 
-            # Los demás casos solo toma la que está para arriba
-            self.held_cards = [primary_card]
-            # Guarda la posicion
-            self.held_cards_original_position = [self.held_cards[0].position]
-            # La pone encima
-            self.pull_to_top(self.held_cards[0])
+                # Toma todas las demás cartas que estamos agarrando
+                card_index = self.piles[pile_index].index(primary_card)
+                for i in range(card_index + 1, len(self.piles[pile_index])):
+                    card_aux = self.piles[pile_index][i]
+                    self.held_cards.append(card_aux)
+                    self.held_cards_original_position.append(card_aux.position)
+                    self.pull_to_top(card_aux)
 
-            # Toma todas las demás cartas que estamos agarrando
-            card_index = self.piles[pile_index].index(primary_card)
-            for i in range(card_index + 1, len(self.piles[pile_index])):
-                card_aux = self.piles[pile_index][i]
-                self.held_cards.append(card_aux)
-                self.held_cards_original_position.append(card_aux.position)
-                self.pull_to_top(card_aux)
+        else:
+
+            # ¿Le dimos vuelta al mazo y no tiene cartas?
+            mats = arcade.get_sprites_at_point((x, y), self.pile_mat_list)
+
+            if len(mats) > 0:
+                mat = mats[0]
+                mat_index = self.pile_mat_list.index(mat)
+
+                # Si no tiene cartas
+                if mat_index == BOTTOM_FACE_DOWN_PILE and len(self.piles[BOTTOM_FACE_DOWN_PILE]) == 0:
+                    # Le da vuelta al mazo e inicia nuevamente
+                    temp_list = self.piles[BOTTOM_FACE_UP_PILE].copy()
+                    for card_aux in reversed(temp_list):
+                        card_aux.face_down()
+                        self.piles[BOTTOM_FACE_UP_PILE].remove(card_aux)
+                        self.piles[BOTTOM_FACE_DOWN_PILE].append(card_aux)
+                        card_aux.position = self.pile_mat_list[BOTTOM_FACE_DOWN_PILE].position
 
     def on_mouse_release(self, x: float, y: float, button: int, modifiers: int):
 
