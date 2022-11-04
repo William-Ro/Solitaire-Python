@@ -37,6 +37,9 @@ CARD_VERTICAL_OFFSET = CARD_HEIGHT * CARD_SCALE * 0.3
 CARD_VALUES = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]  # Declaramos las cartas
 CARD_SUITS = ["Clubs", "Hearts", "Spades", "Diamonds"]
 
+# Esta es la imagen que utilizamos para representar las cartas boca abajo
+FACE_DOWN_IMAGE = ":resources:images/cards/cardBack_red2.png"
+
 # Constantes para representar cada pila individualmente
 PILE_COUNT = 13
 BOTTOM_FACE_DOWN_PILE = 0
@@ -63,7 +66,23 @@ class card(arcade.Sprite):
 
         # Aca se utiliza un png de carta para cuando está volteada
         self.image_file_name = f":resources:images/cards/card{self.sign}{self.value}.png"
-        super().__init__(self.image_file_name, scale, hit_box_algorithm="None")  # Esto inicializa el tamaño de la carta
+        self.is_face_up = False
+        super().__init__(FACE_DOWN_IMAGE, scale, hit_box_algorithm="None")
+
+    def face_down(self):
+        # Esto le da vuelta a la carta boca abajo, o más específicamente al "sprite"
+        self.texture = arcade.load_texture(FACE_DOWN_IMAGE)
+        self.is_face_up = False
+
+    def face_up(self):
+        # Esto pone la carta boca arriba
+        self.texture = arcade.load_texture(self.image_file_name)
+        self.is_face_up = True
+
+    @property
+    def is_face_down(self):
+        # Esto es un get para ver como es el estado de la carta
+        return not self.is_face_up
 
 
 class solitaire(arcade.Window):
@@ -109,6 +128,9 @@ class solitaire(arcade.Window):
         for card_aux in self.card_list:
             self.piles[BOTTOM_FACE_DOWN_PILE].append(card_aux)
 
+        self.deal_cards()
+        self.flip_up_top_cards()
+
     def setup_piles(self):
 
         self.pile_mat_list: arcade.SpriteList = arcade.SpriteList()  # Creamos la lista de sprites o "pilas"
@@ -147,9 +169,14 @@ class solitaire(arcade.Window):
         # Si dimos click el comprueba lo siguiente:
         if len(cards) > 0:
             primary_card = cards[-1]
+            assert isinstance(primary_card, card)
 
             # Comprueba en que pila está la carta
             pile_index = self.get_pile_for_card(primary_card)
+
+            # Aca comprobamos que si movemos la ultima carta de una pila esta se va a dar vuelta automáticamente
+            if primary_card.is_face_down:
+                primary_card.face_up()
 
             # Los demás casos solo toma la que está para arriba
             self.held_cards = [primary_card]
@@ -264,6 +291,32 @@ class solitaire(arcade.Window):
         # Le damos una carta, una pila y la mueve a esa pila específicamente
         self.remove_card_from_pile(card_aux)
         self.piles[pile_index].append(card_aux)
+
+    def deal_cards(self):
+        # Este metodo nos permite agarrar varias cartas a la vez y moverlas
+
+        for pile_no in range(PLAY_PILE_1, PLAY_PILE_7 + 1):
+
+            for j in range(pile_no - PLAY_PILE_1 + 1):
+                # Quita la carta de la pila que estamos tocando
+                card_aux = self.piles[BOTTOM_FACE_DOWN_PILE].pop()
+                # La pone en la pila correcta
+                self.piles[pile_no].append(card_aux)
+                # Ahora si mueve el sprite a la pila que seleccionamos
+                card_aux.position = self.pile_mat_list[pile_no].position
+                # La pone arriba
+                self.pull_to_top(card_aux)
+
+    def flip_up_top_cards(self):
+
+        for i in range(PLAY_PILE_1, PLAY_PILE_7 + 1):  # Aca empezamos a recorrer todas las pilas de juego
+            self.piles[i][-1].face_up()  # Y tomamos la carta de abajo y le damos vuelta boca arriba
+
+    def on_key_press(self, symbol: int, modifiers: int):
+        # Esto detecta que si presionamos la tecla R, el juego se va a reiniciar
+        if symbol == arcade.key.R:
+            # Restart
+            self.setup()
 
 
 def main():
